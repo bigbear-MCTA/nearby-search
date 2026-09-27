@@ -8,6 +8,7 @@
 <meta name="theme-color" content="#ffffff">
 
 <title>近くのお店・温泉を探す</title>
+
 <style>
 body {
     font-family: sans-serif;
@@ -36,7 +37,7 @@ h1 {
     text-align: center;
     padding: 12px;
     margin-bottom: 18px;
-    background: #fff;
+    background: white;
     border-radius: 12px;
     box-shadow: 0 2px 7px #ddd;
 }
@@ -59,6 +60,37 @@ button {
 
 button:active {
     transform: scale(0.97);
+}
+
+.result-card {
+    background: white;
+    padding: 15px;
+    margin-top: 12px;
+    border-radius: 12px;
+    box-shadow: 0 2px 7px #ccc;
+}
+
+.result-name {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.result-info {
+    margin-top: 7px;
+    color: #555;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.map-link {
+    display: block;
+    margin-top: 10px;
+    text-align: center;
+    padding: 10px;
+    background: #4285f4;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
 }
 
 .note {
@@ -106,7 +138,7 @@ button:active {
 <div id="results"></div>
 
 <div class="note">
-検索結果はGoogleマップで表示します
+現在地周辺のお店・施設を検索します
 </div>
 
 </div>
@@ -119,8 +151,8 @@ let longitude = null;
 function getLocation() {
 
     if (!navigator.geolocation) {
-        document.getElementById("status").innerHTML =
-        "⚠️ この端末では現在地を取得できません";
+        document.getElementById("status").textContent =
+            "⚠️ この端末では現在地を取得できません";
         return;
     }
 
@@ -131,14 +163,14 @@ function getLocation() {
             latitude = position.coords.latitude;
             longitude = position.coords.longitude;
 
-            document.getElementById("status").innerHTML =
-            "✅ 現在地を取得しました";
+            document.getElementById("status").textContent =
+                "✅ 現在地を取得しました";
         },
 
-        function(error) {
+        function() {
 
-            document.getElementById("status").innerHTML =
-            "⚠️ 現在地を取得できませんでした<br>Googleマップ側の現在地を利用します";
+            document.getElementById("status").textContent =
+                "⚠️ 現在地を取得できませんでした";
         },
 
         {
@@ -149,6 +181,7 @@ function getLocation() {
     );
 }
 
+
 function searchMap(keyword) {
 
     const url =
@@ -158,6 +191,28 @@ function searchMap(keyword) {
     window.open(url, "_blank");
 }
 
+
+/* 現在地から施設までの直線距離を計算 */
+function distanceKm(lat1, lon1, lat2, lon2) {
+
+    const R = 6371;
+
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+    const c =
+        2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+}
+
+
 async function searchNearbyOnsen() {
 
     if (latitude === null || longitude === null) {
@@ -165,78 +220,183 @@ async function searchNearbyOnsen() {
         return;
     }
 
-    document.getElementById("status").innerHTML =
+    const status = document.getElementById("status");
+    const results = document.getElementById("results");
+
+    status.textContent =
         "♨️ 近くの日帰り温泉を検索中…";
+
+    results.innerHTML = "";
 
     try {
 
-        const { Place, SearchNearbyRankPreference } =
+        const { Place } =
             await google.maps.importLibrary("places");
 
         const request = {
+
+            textQuery: "日帰り温泉",
+
             fields: [
                 "displayName",
                 "formattedAddress",
                 "location",
-                "googleMapsURI"
+                "googleMapsURI",
+                "rating",
+                "userRatingCount"
             ],
 
-            locationRestriction: {
+            locationBias: {
                 center: {
                     lat: latitude,
                     lng: longitude
                 },
-                radius: 10000
+                radius: 20000
             },
 
-            includedTypes: ["spa"],
-
             maxResultCount: 10,
-
-            rankPreference:
-                SearchNearbyRankPreference.DISTANCE,
 
             language: "ja",
             region: "jp"
         };
 
         const { places } =
-            await Place.searchNearby(request);
+            await Place.searchByText(request);
 
-      console.log(places);
+        if (!places || places.length === 0) {
 
-document.getElementById("status").innerHTML =
-    "♨️ " + places.length + "件の温泉が見つかりました";
+            status.textContent =
+                "♨️ 近くの日帰り温泉が見つかりませんでした";
 
-const results = document.getElementById("results");
-results.innerHTML = "";
+            return;
+        }
 
-results.innerHTML = "";
+        status.textContent =
+            "♨️ " + places.length +
+            "件の日帰り温泉が見つかりました";
 
-places.forEach(function(place, index) {
 
-    const card = document.createElement("div");
+        places.forEach(function(place, index) {
 
-    card.style.background = "white";
-    card.style.padding = "15px";
-    card.style.marginTop = "12px";
-    card.style.borderRadius = "12px";
-    card.style.boxShadow = "0 2px 7px #ccc";
+            const card =
+                document.createElement("div");
 
-    card.textContent =
-        (index + 1) + ". " + place.displayName;
+            card.className = "result-card";
 
-    results.appendChild(card);
-});
+
+            const name =
+                document.createElement("div");
+
+            name.className = "result-name";
+
+            name.textContent =
+                (index + 1) + ". " +
+                (place.displayName || "施設名不明");
+
+            card.appendChild(name);
+
+
+            const info =
+                document.createElement("div");
+
+            info.className = "result-info";
+
+
+            /* 評価 */
+            if (place.rating) {
+
+                const rating =
+                    document.createElement("div");
+
+                rating.textContent =
+                    "⭐ " +
+                    place.rating.toFixed(1) +
+                    "（口コミ " +
+                    (place.userRatingCount || 0) +
+                    "件）";
+
+                info.appendChild(rating);
+            }
+
+
+            /* 距離 */
+            if (place.location) {
+
+                const distance =
+                    distanceKm(
+                        latitude,
+                        longitude,
+                        place.location.lat(),
+                        place.location.lng()
+                    );
+
+                const distanceLine =
+                    document.createElement("div");
+
+                distanceLine.textContent =
+                    "📍 現在地から約 " +
+                    distance.toFixed(1) +
+                    " km";
+
+                info.appendChild(distanceLine);
+            }
+
+
+            /* 住所 */
+            if (place.formattedAddress) {
+
+                const address =
+                    document.createElement("div");
+
+                address.textContent =
+                    place.formattedAddress;
+
+                info.appendChild(address);
+            }
+
+
+            card.appendChild(info);
+
+
+            /* Googleマップ */
+            if (place.googleMapsURI) {
+
+                const link =
+                    document.createElement("a");
+
+                link.className = "map-link";
+                link.href = place.googleMapsURI;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+
+                link.textContent =
+                    "📍 Googleマップで見る";
+
+                card.appendChild(link);
+            }
+
+
+            results.appendChild(card);
+
+        });
+
+
+        /* 検索結果までスクロール */
+        results.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+
 
     } catch (error) {
 
         console.error(error);
 
-        document.getElementById("status").innerHTML =
+        status.textContent =
             "⚠️ 温泉の検索でエラーが発生しました";
     }
 }
+
 
 getLocation();
 
