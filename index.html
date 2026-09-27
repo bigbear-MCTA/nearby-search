@@ -275,6 +275,24 @@ async function searchNearbyOnsen() {
             "♨️ " + places.length +
             "件の日帰り温泉が見つかりました";
 
+places.sort(function(a, b) {
+
+    const distanceA = distanceKm(
+        latitude,
+        longitude,
+        a.location.lat(),
+        a.location.lng()
+    );
+
+    const distanceB = distanceKm(
+        latitude,
+        longitude,
+        b.location.lat(),
+        b.location.lng()
+    );
+
+    return distanceA - distanceB;
+});
 
         places.forEach(function(place, index) {
 
