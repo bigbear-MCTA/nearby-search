@@ -103,6 +103,8 @@ button:active {
 
 </div>
 
+<div id="results"></div>
+
 <div class="note">
 検索結果はGoogleマップで表示します
 </div>
@@ -201,10 +203,46 @@ async function searchNearbyOnsen() {
         const { places } =
             await Place.searchNearby(request);
 
-        console.log(places);
+      console.log(places);
 
-        document.getElementById("status").innerHTML =
-            "♨️ " + places.length + "件の温泉が見つかりました";
+document.getElementById("status").innerHTML =
+    "♨️ " + places.length + "件の温泉が見つかりました";
+
+const results = document.getElementById("results");
+results.innerHTML = "";
+
+places.forEach(function(place, index) {
+
+    const name = place.displayName || "施設名不明";
+    const address = place.formattedAddress || "";
+    const mapsUrl = place.googleMapsURI || "#";
+
+    const card = document.createElement("div");
+
+    card.style.background = "white";
+    card.style.padding = "15px";
+    card.style.marginTop = "12px";
+    card.style.borderRadius = "12px";
+    card.style.boxShadow = "0 2px 7px #ccc";
+
+    card.innerHTML =
+        "<div style='font-size:18px;font-weight:bold;'>" +
+        (index + 1) + ". " + name +
+        "</div>" +
+
+        "<div style='margin-top:7px;color:#666;font-size:14px;'>" +
+        address +
+        "</div>" +
+
+        "<a href='" + mapsUrl + "' target='_blank' " +
+        "style='display:block;margin-top:10px;text-align:center;" +
+        "padding:10px;background:#4285f4;color:white;" +
+        "text-decoration:none;border-radius:8px;'>" +
+        "📍 Googleマップで見る" +
+        "</a>";
+
+    results.appendChild(card);
+});
 
     } catch (error) {
 
