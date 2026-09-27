@@ -86,7 +86,7 @@ button:active {
 
 <div class="grid">
 
-<button onclick="searchMap('日帰り温泉')">♨️<br>日帰り温泉</button>
+<button onclick="searchNearbyOnsen()">♨️<br>日帰り温泉</button>
 <button onclick="searchMap('ラーメン')">🍜<br>ラーメン</button>
 
 <button onclick="searchMap('定食 食堂')">🍚<br>定食・食堂</button>
@@ -156,9 +156,70 @@ function searchMap(keyword) {
     window.open(url, "_blank");
 }
 
+async function searchNearbyOnsen() {
+
+    if (latitude === null || longitude === null) {
+        alert("現在地を取得してからもう一度押してください");
+        return;
+    }
+
+    document.getElementById("status").innerHTML =
+        "♨️ 近くの日帰り温泉を検索中…";
+
+    try {
+
+        const { Place, SearchNearbyRankPreference } =
+            await google.maps.importLibrary("places");
+
+        const request = {
+            fields: [
+                "displayName",
+                "formattedAddress",
+                "location",
+                "googleMapsURI"
+            ],
+
+            locationRestriction: {
+                center: {
+                    lat: latitude,
+                    lng: longitude
+                },
+                radius: 10000
+            },
+
+            includedTypes: ["spa"],
+
+            maxResultCount: 10,
+
+            rankPreference:
+                SearchNearbyRankPreference.DISTANCE,
+
+            language: "ja",
+            region: "jp"
+        };
+
+        const { places } =
+            await Place.searchNearby(request);
+
+        console.log(places);
+
+        document.getElementById("status").innerHTML =
+            "♨️ " + places.length + "件の温泉が見つかりました";
+
+    } catch (error) {
+
+        console.error(error);
+
+        document.getElementById("status").innerHTML =
+            "⚠️ 温泉の検索でエラーが発生しました";
+    }
+}
+
 getLocation();
 
 </script>
+
+<script async src="https://maps.googleapis.com/maps/api/js?key=あなたのAPIキー&libraries=places&v=weekly"></script>
 
 </body>
 </html>
