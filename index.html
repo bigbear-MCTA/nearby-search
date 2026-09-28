@@ -262,9 +262,11 @@ async function searchNearbyOnsen() {
                 "formattedAddress",
                 "location",
                 "googleMapsURI",
-         "websiteURI", 
+                "websiteURI", 
                 "rating",
-                "userRatingCount"
+                "userRatingCount",
+                "regularOpeningHours"
+
             ],
 
             locationBias: {
@@ -393,8 +395,41 @@ places.sort(function(a, b) {
                 info.appendChild(address);
             }
 
+            /* 営業時間 */
+if (place.regularOpeningHours) {
 
-            card.appendChild(info);
+    const hours = document.createElement("div");
+    hours.style.marginTop = "5px";
+
+    if (place.regularOpeningHours.openNow === true) {
+        hours.textContent = "🟢 営業中";
+    } else if (place.regularOpeningHours.openNow === false) {
+        hours.textContent = "🔴 営業時間外";
+    }
+
+    info.appendChild(hours);
+
+    const descriptions =
+        place.regularOpeningHours.weekdayDescriptions;
+
+    if (descriptions && descriptions.length > 0) {
+
+        const today = new Date().getDay();
+
+        const googleDay =
+            today === 0 ? 6 : today - 1;
+
+        const todayHours =
+            document.createElement("div");
+
+        todayHours.textContent =
+            "🕒 " + descriptions[googleDay];
+
+        info.appendChild(todayHours);
+    }
+}
+            
+card.appendChild(info);
 
 /* 公式ホームページ */
 if (place.websiteURI) {
