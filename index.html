@@ -317,9 +317,17 @@ places.sort(function(a, b) {
     return distanceA - distanceB;
 });
 
-        places.forEach(function(place, index) {
+       places.forEach(async function(place, index) {
 
-            const card =
+           try {
+    await place.fetchFields({
+        fields: ["regularOpeningHours"]
+    });
+} catch (error) {
+    console.log("営業時間を取得できませんでした", error);
+}
+
+              const card =
                 document.createElement("div");
 
             card.className = "result-card";
