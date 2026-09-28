@@ -584,15 +584,16 @@ async function searchNearbyRamen() {
         const request = {
             textQuery: "ラーメン",
 
-            fields: [
-                "displayName",
-                "formattedAddress",
-                "location",
-                "googleMapsURI",
-                "websiteURI",
-                "rating",
-                "userRatingCount"
-            ],
+           fields: [
+    "displayName",
+    "formattedAddress",
+    "location",
+    "googleMapsURI",
+    "websiteURI",
+    "rating",
+    "userRatingCount",
+    "regularOpeningHours"
+],
 
             locationBias: {
                 center: {
@@ -798,7 +799,8 @@ async function searchNearbyFood(searchWord, emoji, label) {
                 "googleMapsURI",
                 "websiteURI",
                 "rating",
-                "userRatingCount"
+                "userRatingCount",
+                "regularOpeningHours"
             ],
 
             locationBias: {
@@ -931,6 +933,92 @@ async function searchNearbyFood(searchWord, emoji, label) {
                 info.appendChild(address);
             }
 
+            /* 営業時間 */
+if (place.regularOpeningHours) {
+
+    const hours = document.createElement("div");
+    hours.style.marginTop = "5px";
+
+    const periods = place.regularOpeningHours.periods;
+
+    if (periods && periods.length > 0) {
+
+        const now = new Date();
+
+        const nowMinutes =
+            now.getDay() * 1440 +
+            now.getHours() * 60 +
+            now.getMinutes();
+
+        let isOpen = false;
+
+        periods.forEach(function(period) {
+
+            if (!period.open) return;
+
+            const openMinutes =
+                period.open.day * 1440 +
+                period.open.hour * 60 +
+                period.open.minute;
+
+            let closeMinutes;
+
+            if (period.close) {
+
+                closeMinutes =
+                    period.close.day * 1440 +
+                    period.close.hour * 60 +
+                    period.close.minute;
+
+                if (closeMinutes <= openMinutes) {
+                    closeMinutes += 7 * 1440;
+                }
+
+            } else {
+                closeMinutes = openMinutes + 7 * 1440;
+            }
+
+            let checkMinutes = nowMinutes;
+
+            if (checkMinutes < openMinutes) {
+                checkMinutes += 7 * 1440;
+            }
+
+            if (
+                checkMinutes >= openMinutes &&
+                checkMinutes < closeMinutes
+            ) {
+                isOpen = true;
+            }
+        });
+
+        hours.textContent =
+            isOpen
+                ? "🟢 営業中"
+                : "🔴 営業時間外";
+    }
+
+    info.appendChild(hours);
+
+    const descriptions =
+        place.regularOpeningHours.weekdayDescriptions;
+
+    if (descriptions && descriptions.length > 0) {
+
+        const today = new Date().getDay();
+
+        const googleDay =
+            today === 0 ? 6 : today - 1;
+
+        const todayHours =
+            document.createElement("div");
+
+        todayHours.textContent =
+            "🕒 " + descriptions[googleDay];
+
+        info.appendChild(todayHours);
+    }
+}
 
             card.appendChild(info);
 
