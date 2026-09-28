@@ -323,6 +323,10 @@ places.sort(function(a, b) {
     await place.fetchFields({
         fields: ["regularOpeningHours"]
     });
+console.log(
+    place.displayName,
+    place.regularOpeningHours
+);
 } catch (error) {
     console.log("営業時間を取得できませんでした", error);
 }
