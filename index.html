@@ -42,6 +42,27 @@ h1 {
     box-shadow: 0 2px 7px #ddd;
 }
 
+.location-search {
+    margin-bottom: 18px;
+}
+
+.location-search input {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 16px;
+    padding: 14px;
+    border: 1px solid #ccc;
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
+
+.location-search button {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
 .grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -116,6 +137,24 @@ button:active {
 📍 現在地を確認中…
 </div>
 
+<div class="location-search">
+
+<input
+    type="text"
+    id="locationInput"
+    placeholder="地名・駅名・施設名を入力"
+>
+
+<button onclick="searchLocation()">
+🔎 この場所を検索
+</button>
+
+<button onclick="useCurrentLocation()">
+📍 現在地に戻す
+</button>
+
+</div>
+
 <div class="grid">
 
 <button onclick="searchNearbyOnsen()">♨️<br>日帰り温泉</button>
@@ -150,6 +189,7 @@ button:active {
 
 let latitude = null;
 let longitude = null;
+let useManualLocation = false;
 
 function getLocation() {
 
@@ -215,8 +255,79 @@ function distanceKm(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
+async function searchLocation() {
+
+    const input = document.getElementById("locationInput").value.trim();
+
+    if (!input) {
+        document.getElementById("status").textContent =
+            "⚠️ 地名・駅名・施設名を入力してください";
+        return;
+    }
+
+    document.getElementById("status").textContent =
+        "🔎 「" + input + "」を検索しています…";
+
+    try {
+
+        const { Place } =
+            await google.maps.importLibrary("places");
+
+        const request = {
+            textQuery: input,
+            fields: [
+                "displayName",
+                "formattedAddress",
+                "location"
+            ],
+            maxResultCount: 1,
+            language: "ja",
+            region: "jp"
+        };
+
+        const { places } =
+            await Place.searchByText(request);
+
+        if (!places || places.length === 0) {
+            document.getElementById("status").textContent =
+                "⚠️ 場所が見つかりませんでした";
+            return;
+        }
+
+        const place = places[0];
+
+        latitude = place.location.lat();
+        longitude = place.location.lng();
+
+        useManualLocation = true;
+
+        document.getElementById("status").textContent =
+            "📍 検索地点：" + place.displayName;
+
+    } catch (error) {
+
+        document.getElementById("status").textContent =
+            "⚠️ 場所の検索でエラーが発生しました";
+
+        console.error(error);
+    }
+}
+
+function useCurrentLocation() {
+
+    useManualLocation = false;
+
+    document.getElementById("locationInput").value = "";
+
+    document.getElementById("status").textContent =
+        "📍 現在地を確認中…";
+
+    getLocation();
+}
 
 async function searchNearbyOnsen() {
+
+if (!useManualLocation) {
 
     document.getElementById("status").textContent =
         "📍 現在地を再取得しています…";
@@ -241,6 +352,8 @@ async function searchNearbyOnsen() {
         document.getElementById("status").textContent =
             "⚠️ 現在地を取得できませんでした";
         return;
+    }
+
     }    
 
     const status = document.getElementById("status");
@@ -560,6 +673,8 @@ if (place.websiteURI) {
 
 async function searchNearbyFood(searchWord, emoji, label) {
 
+if (!useManualLocation) {
+
     document.getElementById("status").textContent =
         "📍 現在地を再取得しています…";
 
@@ -584,6 +699,8 @@ async function searchNearbyFood(searchWord, emoji, label) {
             "⚠️ 現在地を取得できませんでした";
         return;
     }
+
+}
 
     const status = document.getElementById("status");
     const results = document.getElementById("results");
